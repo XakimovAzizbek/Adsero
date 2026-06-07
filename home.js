@@ -1,9 +1,8 @@
-// Firebase Configuration
+// Firebase Realtime Database - AUTH kerak emas!
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getDatabase, ref, set, get, update } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
 
-// Firebase config - Sizning haqiqiy Firebase config
+// Firebase Config
 const firebaseConfig = {
     apiKey: "AIzaSyCtxk7gcilx1Be8k44SQ32eio6EBmh8IVc",
     authDomain: "loyiha1-773ba.firebaseapp.com",
@@ -17,8 +16,7 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+const database = getDatabase(app);
 
 // Telegram Web App
 const tg = window.Telegram.WebApp;
@@ -26,7 +24,6 @@ tg.ready();
 tg.expand();
 
 // Global Variables
-let currentUser = null;
 let userData = null;
 let currentLanguage = 'en';
 
@@ -74,7 +71,7 @@ const translations = {
 };
 
 // Initialize App
-async function initializeApp() {
+async function initApp() {
     try {
         showLoading(true);
 
@@ -82,40 +79,47 @@ async function initializeApp() {
         const telegramUser = tg.initDataUnsafe?.user;
         
         if (!telegramUser) {
-            console.error('Telegram user data not available');
-            // For testing purposes, use dummy data
+            console.log('Telegram user not found - using test data');
+            // Test uchun dummy data
             const dummyUser = {
                 id: 123456789,
                 first_name: 'Test',
                 last_name: 'User',
                 username: 'testuser'
             };
-            await authenticateUser(dummyUser);
+            await loadUserData(dummyUser);
         } else {
-            await authenticateUser(telegramUser);
+            await loadUserData(telegramUser);
         }
 
         showLoading(false);
     } catch (error) {
         console.error('Initialization error:', error);
         showLoading(false);
-        tg.showAlert('Error initializing app. Please try again.');
+        alert('Xatolik yuz berdi. Iltimos qaytadan urinib ko\'ring.');
     }
 }
 
-// Authenticate User
-async function authenticateUser(telegramUser) {
+// Load or Create User Data
+async function loadUserData(telegramUser) {
     try {
-        // Sign in anonymously to Firebase
-        const userCredential = await signInAnonymously(auth);
-        currentUser = userCredential.user;
-
-        // Check if user exists in Firestore
-        const userDocRef = doc(db, 'users', telegramUser.id.toString());
-        const userDoc = await getDoc(userDocRef);
-
-        if (!userDoc.exists()) {
-            // Create new user
+        const userId = telegramUser.id.toString();
+        const userRef = ref(database, 'users/' + userId);
+        
+        // Check if user exists
+        const snapshot = await get(userRef);
+        
+        if (snapshot.exists()) {
+            // User mavjud - ma'lumotlarni yuklash
+            userData = snapshot.val();
+            console.log('User loaded:', userData);
+            
+            // Last login yangilash
+            await update(userRef, {
+                lastLogin: new Date().toISOString()
+            });
+        } else {
+            // Yangi user yaratish
             userData = {
                 telegramId: telegramUser.id,
                 firstName: telegramUser.first_name || '',
@@ -128,52 +132,46 @@ async function authenticateUser(telegramUser) {
                 createdAt: new Date().toISOString(),
                 lastLogin: new Date().toISOString()
             };
-
-            await setDoc(userDocRef, userData);
+            
+            await set(userRef, userData);
             console.log('New user created:', userData);
-        } else {
-            // Update existing user
-            userData = userDoc.data();
-            await updateDoc(userDocRef, {
-                lastLogin: new Date().toISOString()
-            });
-            console.log('User logged in:', userData);
         }
-
-        // Update UI with user data
+        
+        // UI ni yangilash
         updateUI();
+        
     } catch (error) {
-        console.error('Authentication error:', error);
+        console.error('Load user error:', error);
         throw error;
     }
 }
 
 // Update UI
 function updateUI() {
-    // Update user info
+    // User avatar
     const userInitial = document.getElementById('userInitial');
     if (userData.firstName) {
         userInitial.textContent = userData.firstName.charAt(0).toUpperCase();
     }
 
-    // Update welcome message
+    // Welcome message
     const welcomeMessage = document.getElementById('welcomeMessage');
-    welcomeMessage.textContent = `${translations[currentLanguage].welcome}, ${userData.firstName || 'User'}`;
+    welcomeMessage.textContent = `${translations[currentLanguage].welcome}${userData.firstName ? ', ' + userData.firstName : ''}`;
 
-    // Update user ID
+    // User ID
     const userId = document.getElementById('userId');
     userId.textContent = userData.telegramId;
 
-    // Update balance
+    // Balance
     const balanceAmount = document.getElementById('balanceAmount');
     balanceAmount.textContent = userData.balance.toFixed(2);
 
-    // Update stats
+    // Stats
     document.getElementById('totalAds').textContent = userData.totalAds || 0;
     document.getElementById('activeAds').textContent = userData.activeAds || 0;
     document.getElementById('todayEarnings').textContent = `$${(userData.todayEarnings || 0).toFixed(2)}`;
 
-    // Set Telegram theme colors
+    // Telegram theme colors
     if (tg.themeParams.bg_color) {
         document.documentElement.style.setProperty('--bg-primary', tg.themeParams.bg_color);
     }
@@ -185,7 +183,7 @@ function updateUI() {
     }
 }
 
-// Show/Hide Loading Screen
+// Show/Hide Loading
 function showLoading(show) {
     const loadingScreen = document.getElementById('loadingScreen');
     const mainContent = document.getElementById('mainContent');
@@ -204,11 +202,14 @@ function updateLanguage(lang) {
     currentLanguage = lang;
     const trans = translations[lang];
 
-    document.querySelector('.welcome-section h2').textContent = trans.welcome;
+    // Welcome section
+    const welcomeMessage = document.getElementById('welcomeMessage');
+    welcomeMessage.textContent = `${trans.welcome}${userData.firstName ? ', ' + userData.firstName : ''}`;
+    
     document.querySelector('.welcome-subtitle').textContent = trans.subtitle;
     document.querySelector('.balance-label').textContent = trans.totalBalance;
     
-    // Update button texts
+    // Buttons
     const publisherBtn = document.querySelector('.publisher-btn');
     publisherBtn.querySelector('.btn-title').textContent = trans.publisher;
     publisherBtn.querySelector('.btn-subtitle').textContent = trans.publisherSub;
@@ -220,12 +221,13 @@ function updateLanguage(lang) {
     const languageBtn = document.querySelector('.language-btn');
     languageBtn.querySelector('.btn-title').textContent = trans.language;
 
-    // Update stats labels
-    document.querySelectorAll('.stat-label')[0].textContent = trans.totalAds;
-    document.querySelectorAll('.stat-label')[1].textContent = trans.active;
-    document.querySelectorAll('.stat-label')[2].textContent = trans.today;
+    // Stats
+    const statLabels = document.querySelectorAll('.stat-label');
+    statLabels[0].textContent = trans.totalAds;
+    statLabels[1].textContent = trans.active;
+    statLabels[2].textContent = trans.today;
 
-    // Update current language display
+    // Current language
     const languageNames = {
         en: 'English',
         uz: "O'zbekcha",
@@ -233,32 +235,6 @@ function updateLanguage(lang) {
     };
     document.getElementById('currentLanguage').textContent = languageNames[lang];
 }
-
-// Event Listeners
-document.addEventListener('DOMContentLoaded', () => {
-    // Publisher button
-    document.getElementById('publisherBtn').addEventListener('click', () => {
-        tg.HapticFeedback.impactOccurred('medium');
-        // Navigate to publisher page
-        window.location.href = 'publisher.html';
-    });
-
-    // Advertiser button
-    document.getElementById('advertiserBtn').addEventListener('click', () => {
-        tg.HapticFeedback.impactOccurred('medium');
-        // Navigate to advertiser page
-        window.location.href = 'advertiser.html';
-    });
-
-    // Language button
-    document.getElementById('languageBtn').addEventListener('click', () => {
-        tg.HapticFeedback.impactOccurred('light');
-        showLanguageSelector();
-    });
-
-    // Initialize app
-    initializeApp();
-});
 
 // Show Language Selector
 function showLanguageSelector() {
@@ -268,15 +244,7 @@ function showLanguageSelector() {
         { code: 'ru', name: 'Русский' }
     ];
 
-    const buttons = languages.map(lang => ({
-        text: lang.name,
-        action: () => {
-            updateLanguage(lang.code);
-            tg.HapticFeedback.notificationOccurred('success');
-        }
-    }));
-
-    // Show Telegram popup
+    // Telegram popup
     tg.showPopup({
         title: 'Select Language',
         message: 'Choose your preferred language',
@@ -292,26 +260,42 @@ function showLanguageSelector() {
     });
 }
 
-// Monitor auth state
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        currentUser = user;
-        console.log('User authenticated:', user.uid);
-    } else {
-        console.log('User signed out');
-    }
+// Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Publisher button
+    document.getElementById('publisherBtn').addEventListener('click', () => {
+        tg.HapticFeedback.impactOccurred('medium');
+        alert('Publisher page - Coming soon!');
+        // window.location.href = 'publisher.html';
+    });
+
+    // Advertiser button
+    document.getElementById('advertiserBtn').addEventListener('click', () => {
+        tg.HapticFeedback.impactOccurred('medium');
+        alert('Advertiser page - Coming soon!');
+        // window.location.href = 'advertiser.html';
+    });
+
+    // Language button
+    document.getElementById('languageBtn').addEventListener('click', () => {
+        tg.HapticFeedback.impactOccurred('light');
+        showLanguageSelector();
+    });
+
+    // Initialize
+    initApp();
 });
 
-// Export functions for testing
+// Export for testing
 window.adseroApp = {
     updateLanguage,
-    userData: () => userData,
-    refreshBalance: async () => {
+    getUserData: () => userData,
+    refreshData: async () => {
         if (userData) {
-            const userDocRef = doc(db, 'users', userData.telegramId.toString());
-            const userDoc = await getDoc(userDocRef);
-            if (userDoc.exists()) {
-                userData = userDoc.data();
+            const userRef = ref(database, 'users/' + userData.telegramId);
+            const snapshot = await get(userRef);
+            if (snapshot.exists()) {
+                userData = snapshot.val();
                 updateUI();
             }
         }

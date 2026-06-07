@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adsero - Advertising Platform</title>
+    <link rel="stylesheet" href="home.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loader"></div>
+        <p>Loading Adsero...</p>
+    </div>
+
+    <!-- Main Container -->
+    <div id="mainContent" class="container" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <circle cx="16" cy="16" r="16" fill="url(#gradient)"/>
+                    <path d="M10 16L14 20L22 12" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32">
+                            <stop offset="0%" stop-color="#667eea"/>
+                            <stop offset="100%" stop-color="#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1>Adsero</h1>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">
+                    <span id="userInitial">U</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Balance Card -->
+        <div class="balance-card">
+            <div class="balance-header">
+                <span class="balance-label">Total Balance</span>
+                <span class="currency-badge">USDT</span>
+            </div>
+            <div class="balance-amount">
+                <span class="dollar-sign">$</span>
+                <span id="balanceAmount">0.00</span>
+            </div>
+            <div class="balance-footer">
+                <span class="user-id">ID: <span id="userId">Loading...</span></span>
+            </div>
+        </div>
+
+        <!-- Welcome Message -->
+        <div class="welcome-section">
+            <h2 id="welcomeMessage">Welcome back!</h2>
+            <p class="welcome-subtitle">Choose your role to get started</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="action-btn publisher-btn" id="publisherBtn">
+                <div class="btn-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="btn-content">
+                    <span class="btn-title">Publisher</span>
+                    <span class="btn-subtitle">Show ads & earn</span>
+                </div>
+                <div class="btn-arrow">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M7 4L13 10L7 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            </button>
+
+            <button class="action-btn advertiser-btn" id="advertiserBtn">
+                <div class="btn-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M9 9L15 15M15 9L9 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="btn-content">
+                    <span class="btn-title">Advertiser</span>
+                    <span class="btn-subtitle">Create campaigns</span>
+                </div>
+                <div class="btn-arrow">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M7 4L13 10L7 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            </button>
+
+            <button class="action-btn language-btn" id="languageBtn">
+                <div class="btn-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        <path d="M2 12H22M12 2C14.5 4.5 16 8.5 16 12C16 15.5 14.5 19.5 12 22M12 2C9.5 4.5 8 8.5 8 12C8 15.5 9.5 19.5 12 22" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </div>
+                <div class="btn-content">
+                    <span class="btn-title">Language</span>
+                    <span class="btn-subtitle" id="currentLanguage">English</span>
+                </div>
+                <div class="btn-arrow">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M7 4L13 10L7 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            </button>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats-section">
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 2L12.5 7L18 8L14 12L15 18L10 15L5 18L6 12L2 8L7.5 7L10 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="totalAds">0</span>
+                    <span class="stat-label">Total Ads</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M2 10L8 16L18 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="activeAds">0</span>
+                    <span class="stat-label">Active</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18Z" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M10 6V10L13 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="todayEarnings">$0.00</span>
+                    <span class="stat-label">Today</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Config -->
+    <script type="module" src="home.js"></script>
+</body>
+</html>

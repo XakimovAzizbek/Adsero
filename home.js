@@ -1,4 +1,4 @@
-// Firebase Realtime Database - AUTH kerak emas!
+// Firebase Realtime Database
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getDatabase, ref, set, get, update } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
 
@@ -30,7 +30,7 @@ let currentLanguage = 'en';
 // Language Translations
 const translations = {
     en: {
-        welcome: "Welcome back!",
+        welcome: "Welcome back",
         subtitle: "Choose your role to get started",
         totalBalance: "Total Balance",
         publisher: "Publisher",
@@ -43,7 +43,7 @@ const translations = {
         today: "Today"
     },
     uz: {
-        welcome: "Xush kelibsiz!",
+        welcome: "Xush kelibsiz",
         subtitle: "Rolni tanlang va boshlang",
         totalBalance: "Umumiy Balans",
         publisher: "Nashriyotchi",
@@ -56,7 +56,7 @@ const translations = {
         today: "Bugun"
     },
     ru: {
-        welcome: "Добро пожаловать!",
+        welcome: "Добро пожаловать",
         subtitle: "Выберите роль для начала",
         totalBalance: "Общий Баланс",
         publisher: "Издатель",
@@ -89,6 +89,7 @@ async function initApp() {
             };
             await loadUserData(dummyUser);
         } else {
+            console.log('Telegram user found:', telegramUser);
             await loadUserData(telegramUser);
         }
 
@@ -96,7 +97,7 @@ async function initApp() {
     } catch (error) {
         console.error('Initialization error:', error);
         showLoading(false);
-        alert('Xatolik yuz berdi. Iltimos qaytadan urinib ko\'ring.');
+        tg.showAlert('Xatolik yuz berdi: ' + error.message);
     }
 }
 
@@ -105,6 +106,8 @@ async function loadUserData(telegramUser) {
     try {
         const userId = telegramUser.id.toString();
         const userRef = ref(database, 'users/' + userId);
+        
+        console.log('Loading user data for ID:', userId);
         
         // Check if user exists
         const snapshot = await get(userRef);
@@ -148,28 +151,42 @@ async function loadUserData(telegramUser) {
 
 // Update UI
 function updateUI() {
+    console.log('Updating UI with user data:', userData);
+    
     // User avatar
     const userInitial = document.getElementById('userInitial');
     if (userData.firstName) {
         userInitial.textContent = userData.firstName.charAt(0).toUpperCase();
+    } else {
+        userInitial.textContent = 'U';
     }
 
     // Welcome message
     const welcomeMessage = document.getElementById('welcomeMessage');
-    welcomeMessage.textContent = `${translations[currentLanguage].welcome}${userData.firstName ? ', ' + userData.firstName : ''}`;
+    const name = userData.firstName ? ', ' + userData.firstName : '';
+    welcomeMessage.textContent = translations[currentLanguage].welcome + name + '!';
 
-    // User ID
-    const userId = document.getElementById('userId');
-    userId.textContent = userData.telegramId;
+    // User ID - TO'G'RILANDI!
+    const userIdElement = document.getElementById('userId');
+    if (userIdElement && userData.telegramId) {
+        userIdElement.textContent = userData.telegramId;
+        console.log('User ID set to:', userData.telegramId);
+    }
 
     // Balance
     const balanceAmount = document.getElementById('balanceAmount');
-    balanceAmount.textContent = userData.balance.toFixed(2);
+    if (balanceAmount) {
+        balanceAmount.textContent = (userData.balance || 0).toFixed(2);
+    }
 
     // Stats
-    document.getElementById('totalAds').textContent = userData.totalAds || 0;
-    document.getElementById('activeAds').textContent = userData.activeAds || 0;
-    document.getElementById('todayEarnings').textContent = `$${(userData.todayEarnings || 0).toFixed(2)}`;
+    const totalAdsElement = document.getElementById('totalAds');
+    const activeAdsElement = document.getElementById('activeAds');
+    const todayEarningsElement = document.getElementById('todayEarnings');
+    
+    if (totalAdsElement) totalAdsElement.textContent = userData.totalAds || 0;
+    if (activeAdsElement) activeAdsElement.textContent = userData.activeAds || 0;
+    if (todayEarningsElement) todayEarningsElement.textContent = `$${(userData.todayEarnings || 0).toFixed(2)}`;
 
     // Telegram theme colors
     if (tg.themeParams.bg_color) {
@@ -204,7 +221,8 @@ function updateLanguage(lang) {
 
     // Welcome section
     const welcomeMessage = document.getElementById('welcomeMessage');
-    welcomeMessage.textContent = `${trans.welcome}${userData.firstName ? ', ' + userData.firstName : ''}`;
+    const name = userData.firstName ? ', ' + userData.firstName : '';
+    welcomeMessage.textContent = trans.welcome + name + '!';
     
     document.querySelector('.welcome-subtitle').textContent = trans.subtitle;
     document.querySelector('.balance-label').textContent = trans.totalBalance;
@@ -262,27 +280,30 @@ function showLanguageSelector() {
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
-    // Publisher button
+    console.log('DOM loaded, initializing...');
+    
+    // Publisher button - publisher.html ga o'tish
     document.getElementById('publisherBtn').addEventListener('click', () => {
+        console.log('Publisher button clicked');
         tg.HapticFeedback.impactOccurred('medium');
-        alert('Publisher page - Coming soon!');
-        // window.location.href = 'publisher.html';
+        window.location.href = 'publisher.html';
     });
 
-    // Advertiser button
+    // Advertiser button - advertiser.html ga o'tish
     document.getElementById('advertiserBtn').addEventListener('click', () => {
+        console.log('Advertiser button clicked');
         tg.HapticFeedback.impactOccurred('medium');
-        alert('Advertiser page - Coming soon!');
-        // window.location.href = 'advertiser.html';
+        window.location.href = 'advertiser.html';
     });
 
     // Language button
     document.getElementById('languageBtn').addEventListener('click', () => {
+        console.log('Language button clicked');
         tg.HapticFeedback.impactOccurred('light');
         showLanguageSelector();
     });
 
-    // Initialize
+    // Initialize app
     initApp();
 });
 
